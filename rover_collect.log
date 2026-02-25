@@ -1,0 +1,110 @@
+2026-02-17 11:04:41,101 [INFO ]  Connecting to device 10.10.148.255 with baud rate 115200...
+2026-02-17 11:09:05,094 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-17 11:09:10,166 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-17 11:09:35,171 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-17 11:10:42,488 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-17 11:10:47,552 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-17 11:11:12,528 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-17 11:16:34,434 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-17 11:16:39,494 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-17 11:17:04,505 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-23 10:10:27,131 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-23 10:10:32,357 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-23 10:14:39,329 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-23 10:14:44,407 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-23 10:15:09,377 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-23 10:16:09,288 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-23 10:16:14,352 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-23 10:16:39,347 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-23 10:35:21,377 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-23 10:35:26,440 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-23 10:35:51,462 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-23 10:40:19,815 [INFO ]  Connecting to device udp:127.0.0.1:14550 with baud rate 115200...
+2026-02-23 10:40:24,888 [WARNI]  Link timeout, no heartbeat in last 5 seconds
+2026-02-23 10:40:49,894 [ERROR]  Exception in MAVLink input loop
+Traceback (most recent call last):
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/mavlink.py", line 211, in mavlink_thread_in
+    fn(self)
+  File "/home/usafa/.local/lib/python3.8/site-packages/dronekit/__init__.py", line 1370, in listener
+    raise APIException('No heartbeat in %s seconds, aborting.' %
+dronekit.APIException: No heartbeat in 30 seconds, aborting.
+2026-02-23 10:46:23,206 [INFO ]  Connecting to device /dev/ttyACM0 with baud rate 115200...
+2026-02-23 10:46:23,257 [DEBUG]  mav recv error: invalid MAVLink prefix '0'
+2026-02-23 10:46:23,485 [INFO ]  ArduRover V4.5.7 (52bed8d5)
+2026-02-23 10:46:23,486 [INFO ]  ChibiOS: 6a85082c
+2026-02-23 10:46:23,487 [INFO ]  mRoControlZeroClassic 00350039 35325117 39363930
+2026-02-23 10:46:23,488 [INFO ]  RCOut: PWM:1-12
+2026-02-23 10:46:24,572 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-23 10:46:25,576 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-23 10:46:26,579 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-23 10:46:27,382 [INFO ]  Device connected.
+2026-02-23 10:46:27,383 [INFO ]  Device version: APM:Rover-4.5.7, log=
+2026-02-23 10:51:15,313 [INFO ]  Connecting to device /dev/ttyACM0 with baud rate 115200...
+2026-02-23 10:51:15,511 [DEBUG]  mav recv error: invalid MAVLink prefix '206'
+2026-02-23 10:51:15,949 [INFO ]  ArduRover V4.5.7 (52bed8d5)
+2026-02-23 10:51:15,951 [INFO ]  ChibiOS: 6a85082c
+2026-02-23 10:51:15,951 [INFO ]  mRoControlZeroClassic 00350039 35325117 39363930
+2026-02-23 10:51:15,952 [INFO ]  RCOut: PWM:1-12
+2026-02-23 10:51:17,034 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-23 10:51:18,037 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-23 10:51:19,040 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-23 10:51:19,842 [INFO ]  Device connected.
+2026-02-23 10:51:19,843 [INFO ]  Device version: APM:Rover-4.5.7, log=
+2026-02-25 10:20:12,571 [INFO ]  Connecting to device /dev/ttyACM0 with baud rate 115200...
+2026-02-25 10:20:12,770 [DEBUG]  mav recv error: invalid MAVLink prefix '255'
+2026-02-25 10:20:13,200 [INFO ]  ArduRover V4.5.7 (52bed8d5)
+2026-02-25 10:20:13,201 [INFO ]  ChibiOS: 6a85082c
+2026-02-25 10:20:13,202 [INFO ]  mRoControlZeroClassic 00350039 35325117 39363930
+2026-02-25 10:20:13,203 [INFO ]  RCOut: PWM:1-12
+2026-02-25 10:20:14,286 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-25 10:20:15,291 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-25 10:20:16,294 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-25 10:20:17,096 [INFO ]  Device connected.
+2026-02-25 10:20:17,097 [INFO ]  Device version: APM:Rover-4.5.7, log=
+2026-02-25 10:26:20,406 [INFO ]  Connecting to device /dev/ttyACM0 with baud rate 115200...
+2026-02-25 10:26:20,598 [DEBUG]  mav recv error: invalid MAVLink prefix '1'
+2026-02-25 10:26:20,973 [INFO ]  ArduRover V4.5.7 (52bed8d5)
+2026-02-25 10:26:20,974 [INFO ]  ChibiOS: 6a85082c
+2026-02-25 10:26:20,975 [INFO ]  mRoControlZeroClassic 00350039 35325117 39363930
+2026-02-25 10:26:20,976 [INFO ]  RCOut: PWM:1-12
+2026-02-25 10:26:22,061 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-25 10:26:23,064 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-25 10:26:24,066 [DEBUG]  Still waiting for data from vehicle: parameters
+2026-02-25 10:26:24,869 [INFO ]  Device connected.
+2026-02-25 10:26:24,870 [INFO ]  Device version: APM:Rover-4.5.7, log=
