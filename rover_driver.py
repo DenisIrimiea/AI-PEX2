@@ -10,11 +10,13 @@ import keras
 import utilities.drone_lib as dl
 
 # Path to the trained model weights
-MODEL_NAME = "models/V6.6_SGD_Batch115_664Steps/rover_model06_ver06_epoch0095_val_loss0.005095.h5"
+# ✅ CHANGE: use your best model from training
+MODEL_NAME = "models/rover_model_01_ver01_epoch0013_val_loss0.0275.h5"
 
 # Rover driving command limits
-MIN_STEERING, MAX_STEERING = 1000, 2000
-MIN_THROTTLE, MAX_THROTTLE = 1500, 2000
+# ✅ CHANGE: match YOUR ranges (prefer using the same ones used in data_gen.py)
+MIN_STEERING, MAX_STEERING = 1192, 2100
+MIN_THROTTLE, MAX_THROTTLE = 1300, 1800
 
 """
 HINT:  Get values to the above by querying your own rover...
@@ -39,15 +41,14 @@ def get_model(filename):
 def min_max_norm(val, v_min=1000.0, v_max=2000.0):
     return (val - v_min) / (v_max - v_min)
 
-
 def invert_min_max_norm(val, v_min=1000.0, v_max=2000.0):
     return (val * (v_max - v_min)) + v_min
-
 
 def denormalize(steering, throttle):
     """Denormalize steering and throttle values to the rover's command range."""
     steering = invert_min_max_norm(steering, MIN_STEERING, MAX_STEERING)
-    throttle = invert_min_max_norm(steering, MIN_THROTTLE, MAX_THROTTLE)
+    # ✅ FIX BUG: throttle should use throttle, not steering
+    throttle = invert_min_max_norm(throttle, MIN_THROTTLE, MAX_THROTTLE)
     return steering, throttle
 
 def initialize_pipeline(brg=False):
@@ -55,12 +56,9 @@ def initialize_pipeline(brg=False):
     pipeline = rs.pipeline()
     config = rs.config()
 
-    if brg:
-        config.enable_stream(rs.stream.color, 
-                             640, 480, rs.format.bgr8, 30)
-    else:
-        config.enable_stream(rs.stream.color, 640, 480, 
-                             rs.format.rgb, 30)
+    # ✅ CHANGE: use BGR so OpenCV expectations match
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
     pipeline.start(config)
     return pipeline
 
@@ -71,8 +69,8 @@ def get_video_data(pipeline):
     if not color_frame:
         return None
 
-    image = np.asanyarray(color_frame.get_data())
-    
+    image = np.asanyarray(color_frame.get_data())  # BGR
+
     #TODO: process your incoming frame so that it is 
     #      in the form required to feed into your CNN.
     # Maybe resize
@@ -81,23 +79,36 @@ def get_video_data(pipeline):
     # Perform cropping (if any)
     # etc...
 
-    return image
+    # ✅ REQUIRED preprocessing to match training:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # turn into B&W
+    bw = cv2.inRange(gray, white_L, white_H)  # 0/255
+
+    # resize to training size (160x120)
+    bw = cv2.resize(bw, (resize_W, resize_H), interpolation=cv2.INTER_AREA)
+
+    # normalize to [0,1] and add channel+batch dims => (1,120,160,1)
+    bw = bw.astype(np.float32) / 255.0
+    bw = np.expand_dims(bw, axis=-1)
+    bw = np.expand_dims(bw, axis=0)
+
+    return bw
 
 def set_rover_data(rover, steering, throttle):
     """Set rover control commands, ensuring they're within the valid range."""
     
     # May uncomment below to force a specific range, if your model is 
     # sometimes outputting weird ranges (should not be needed)
-    #steering, throttle = check_inputs(int(steering), int(throttle))
+    steering, throttle = check_inputs(int(steering), int(throttle))
     
     rover.channels.overrides = {"1": steering, "3": throttle}
     print(f"Steering: {steering}, Throttle: {throttle}")
 
-
 def check_inputs(steering, throttle):
     """Check and clamp the steering and throttle inputs to their allowed ranges."""
-    steering = np.clip(steering, MIN_STEERING, MAX_STEERING)
-    throttle = np.clip(throttle, MIN_THROTTLE, MAX_THROTTLE)
+    steering = int(np.clip(steering, MIN_STEERING, MAX_STEERING))
+    throttle = int(np.clip(throttle, MIN_THROTTLE, MAX_THROTTLE))
     return steering, throttle
 
 def main():
@@ -105,6 +116,8 @@ def main():
     """Main function to drive the rover based on model predictions."""
    
     # Setup and connect to the rover
+    # ✅ NOTE: your dl.connect_device usually expects (port, baud)
+    # If your drone_lib defaults baud internally, this may still work.
     rover = dl.connect_device("/dev/ttyUSB0")
 
     # Load the trained model
@@ -133,16 +146,15 @@ def main():
 
             # Predict steering and throttle from the processed image
             #TODO: get model predictions
+            output = model.predict(processed_image, verbose=0)  # shape (1,2)
 
-            #output = get_prdictions
-            
             # Note that you may denormalize values now, 
             # if you trained your model on normalized values.
-            #steering, throttle = denormalize(output[0][0], output[0][1])
+            steering, throttle = denormalize(output[0][0], output[0][1])
             
             # Next, send predicted values to rover to be executed
             # Note: this is where your model drives!
-            #set_rover_data(rover, steering, throttle)
+            set_rover_data(rover, steering, throttle)
 
         # stop recording
         pipeline.stop()

@@ -1,6 +1,5 @@
 """
 data_gen.py
-
 """
 
 import cv2
@@ -10,38 +9,25 @@ from random import shuffle
 import numpy as np
 
 # Constants defining the range of steering and throttle values
-# Note that these should match YOUR rover's range 
-# (each rover is different -ASK HOW to get these ranges!)
-STEERING_MIN = 1192
-STEERING_MAX = 1792
-THROTTLE_MIN = 1492
-THROTTLE_MAX = 1800
-
-"""
-HINT:  
-throttle_max = rover.parameters['RC3_MAX']
-throttle_min = rover.parameters['RC3_MIN']
-steering_max = rover.parameters['RC1_MAX']
-steering_min = rover.parameters['RC1_MIN']
-"""
-
+STEERING_MIN = 1176
+STEERING_MAX = 2006
+THROTTLE_MIN = 985
+THROTTLE_MAX = 1766
 
 # Normalizes a value to a 0-1 scale based on a minimum and maximum value
 def min_max_norm(val, v_min=1000.0, v_max=2000.0):
     return (val - v_min) / (v_max - v_min)
 
-
 # Inverts a normalized value back to its original scale
 def invert_min_max_norm(val, v_min=1000.0, v_max=2000.0):
     return (val * (v_max - v_min)) + v_min
-
 
 # Gathers a list of image file paths in sequences from subdirectories of a root folder
 def get_sample_series_list(root_folder, sequence_size=13,
                            offset_start=0, shuffle_series=True,
                            random_state=None, interval=1, ends_with="*_bw.png"):
-                           
-    samples = []  # simple array to append all the entries present in the .csv file
+
+    samples = []
     sub_folders = [f.path for f in os.scandir(root_folder) if f.is_dir()]
     sequence = []
 
@@ -52,30 +38,31 @@ def get_sample_series_list(root_folder, sequence_size=13,
         for file in files:
             if file_count % interval == 0:
                 if len(sequence) >= sequence_size:
-                    # Add sequence to list of sequences/samples
                     samples.append(sequence)
-
-                    # reset sequence list
                     sequence = []
-                
-                # continue to build current sequence...
+
                 file_count += 1
                 if file_count >= offset_start:
                     sequence.append(file)
+            else:
+                file_count += 1
+
+        # (optional) flush remainder for this folder
+        if len(sequence) >= sequence_size:
+            samples.append(sequence)
+        sequence = []
 
     if shuffle_series:
-        # Shuffle the order of sequences so that they are not contiguous.
-        shuffle(samples, random =random_state)
+        # ✅ FIX: random.shuffle doesn't accept random=
+        shuffle(samples)
 
     return samples
 
 
-# Organizes all image files in subfolders under the root folder into sequences
 def get_sequence_samples(root_folder, sequence_size=13,
-                            offset_start=0, shuffle_series=True,
-                            random_state=None, interval=1):
-    
-    # Start with a list of sequential image series.
+                         offset_start=0, shuffle_series=True,
+                         random_state=None, interval=1):
+
     samples = get_sample_series_list(root_folder=root_folder,
                                      sequence_size=sequence_size,
                                      offset_start=offset_start,
@@ -83,12 +70,10 @@ def get_sequence_samples(root_folder, sequence_size=13,
                                      random_state=random_state,
                                      interval=interval)
 
-    # Finally, convert this list of lists into a single flat list of images.
     samples = [item for sublist in samples for item in sublist]
     return samples
 
 
-# Splits the samples into two sets based on a specified fraction
 def split_samples(samples, fraction=0.8):
     length = len(samples)
     num_training = int(fraction * length)
@@ -97,23 +82,20 @@ def split_samples(samples, fraction=0.8):
 
 def batch_generator(samples, batch_size=13,
                     normalize_labels=True,
-                    y_min=1000.0, y_max=2000.0):
-    
+                    y_min=1000.0, y_max=2000.0,
+                    img_h=120, img_w=160):
+
     num_samples = len(samples)
     while True:
         for offset in range(0, num_samples, batch_size):
-            # print(f" [Serving batch {offset} - {offset+batch_size}...] ")
             batch_samples = samples[offset:offset + batch_size]
-            # Sanity check
-            # print(f" {sample_name} data range: {offset}:{offset + batch_size}")
+
             images = []
             labels = []
             for batch_sample in batch_samples:
                 try:
                     file_name = os.path.basename(batch_sample).replace(".png", "")
 
-                    # IMPORTANT NOTE: Be sure that these fields line up 
-                    # with your particular file naming convention!
                     attributes = file_name.split('_')
                     if len(attributes) < 5:
                         f_num, throttle, steering, f_type = file_name.split('_')
@@ -123,27 +105,33 @@ def batch_generator(samples, batch_size=13,
                     throttle = int(throttle)
                     steering = int(steering)
 
-                    # As we stream frames from the realsense camera, we opted to
-                    # configure that stream to give us B&W images.
-                    # If this is not the case, then change the line below!
                     image = cv2.imread(batch_sample, cv2.IMREAD_GRAYSCALE)
+                    if image is None:
+                        raise FileNotFoundError("cv2.imread returned None")
+
+                    # ✅ Make sure size is consistent
+                    if image.shape != (img_h, img_w):
+                        image = cv2.resize(image, (img_w, img_h), interpolation=cv2.INTER_AREA)
+
+                    # ✅ Normalize image and add channel dimension for CNN
+                    image = image.astype(np.float32) / 255.0
+                    image = np.expand_dims(image, axis=-1)  # (H,W,1)
                     images.append(image)
 
                     if normalize_labels:
-                        steering = min_max_norm(steering, y_min, y_max)
-                        throttle = min_max_norm(throttle, y_min, y_max)
+                        # ✅ Use correct ranges (separate steering vs throttle)
+                        steering_n = min_max_norm(steering, STEERING_MIN, STEERING_MAX)
+                        throttle_n = min_max_norm(throttle, THROTTLE_MIN, THROTTLE_MAX)
+                    else:
+                        steering_n = float(steering)
+                        throttle_n = float(throttle)
 
-                    labels.append([steering, throttle])
+                    labels.append([steering_n, throttle_n])
 
                 except Exception as e:
                     print(f" [EXCEPTION ENCOUNTERED: {e}; skipping sample {batch_sample}.] ")
 
-            # Convert images into numpy arrays
-            x_train = np.array(images)
+            x_train = np.array(images, dtype=np.float32)
+            y_train = np.array(labels, dtype=np.float32)
 
-            # Convert labels to numpy arrays
-            y_train = np.array(labels)
-
-            # Here we do not hold the values of X_train and y_train,
-            # instead we yield the values.
             yield x_train, y_train
