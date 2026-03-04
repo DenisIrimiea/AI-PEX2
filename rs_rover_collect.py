@@ -27,11 +27,11 @@ import os
 DEFAULT_BAUD = 115200  # Default baud rate for telemetry connection
 
 # ✅ User-writable default path (prevents PermissionError on /media/... unless you explicitly pass --output)
-DEFAULT_DATA_PATH = os.path.expanduser("~/rover_data/")
+DEFAULT_DATA_PATH = os.path.expanduser("/media/usafa/data/rover_data")
 
 # Experimenting with different telemetry ports
 # DEFAULT_PORT = "/dev/ttyUSB0"  # USB connection
-# DEFAULT_PORT = "/dev/ttyACM0"  # Serial connection
+DEFAULT_PORT = "/dev/ttyACM0"  # Serial connection
 DEFAULT_PORT = "udp:127.0.0.1:14550"  # Default telemetry connection port (UDP)
 connection = None  # Global variable for drone connection
 
