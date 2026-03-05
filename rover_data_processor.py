@@ -1,68 +1,60 @@
 #!/usr/bin/env python3
 """
 rover_data_processor.py
-
-Processes RealSense .bag files and matching telemetry .csv files.
-Outputs binary preprocessed images labeled with throttle/steering/heading.
-
-Expected layout:
-  AI-PEX2/
-    rover_data_processor.py
-    Cripple/
-      rover_data/               <-- .bag + .csv + .log
-      rover_data_processed/     <-- output folders created here
 """
 
+import argparse
 import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2
-import time
 import csv
 import os
 from imutils.video import FPS
 
 
-# ---------- PATHS (relative to this script) ----------
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  # AI-PEX2
-SOURCE_PATH = os.path.join(SCRIPT_DIR, "Cripple", "rover_data")
-DEST_PATH = os.path.join(SCRIPT_DIR, "Cripple", "rover_data_processed")
-# -----------------------------------------------------
+# Paths for source and destination data (relative to this script)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  # AI-PEX2-main
+SOURCE_PATH = os.path.join(SCRIPT_DIR, "rover_data")
+DEST_PATH = os.path.join(SOURCE_PATH, "processed_data")
 
+# Parameters for image processing
+# Define the range of white values to be considered for binary conversion
+white_L, white_H = 200, 255
 
-# ---------------- IMAGE SETTINGS ----------------
+# Resize dimensions (quarter-ish of 640x480)
 resize_W, resize_H = 160, 120
+
+# Crop from top to focus on relevant part of the image
 crop_top_pixels = 160         # remove top 160px from 480px height
-white_L, white_H = 200, 255   # threshold for "white tape"
-morph_k = 3                   # morphology kernel size
-# ------------------------------------------------
+
+# Morphology kernel size
+morph_k = 3
 
 
 def load_telem_file(path: str):
-    """Load telemetry CSV into dict keyed by frame index."""
+    """
+    Loads telemetry data from a CSV file into a dict keyed by frame index (as strings).
+    Helps with speed of data processing.
+    """
     lookup = {}
     with open(path, "r", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
             idx = row.get("index")
             if idx is not None:
-                lookup[idx] = row
+                lookup[str(idx)] = row
     return lookup
 
 
 def preprocess_frame(color_rgb: np.ndarray) -> np.ndarray:
-    """
-    Convert RGB frame to a binary mask highlighting white tape.
-    Returns uint8 image of shape (resize_H, resize_W), values 0 or 255.
-    """
-    # RealSense provides RGB; convert to OpenCV-friendly BGR
+
     bgr = cv2.cvtColor(color_rgb, cv2.COLOR_RGB2BGR)
 
     # Crop bottom region
-    h, w = bgr.shape[:2]
+    h, _ = bgr.shape[:2]
     top = min(max(crop_top_pixels, 0), h - 1)
     cropped = bgr[top:, :]
 
-    # Resize for speed
     resized = cv2.resize(cropped, (resize_W, resize_H), interpolation=cv2.INTER_AREA)
 
     # Grayscale + blur
@@ -80,78 +72,82 @@ def preprocess_frame(color_rgb: np.ndarray) -> np.ndarray:
     return bw
 
 
-def process_bag_file(source_file: str, skip_if_exists: bool = True):
+def process_bag_file(source_file, dest_folder=None, skip_if_exists=True):
+    """
+    Processes a single .bag file, extracting frames and converting them to grayscale and binary images.
+    Saves these images to a specified destination directory.
+    """
     fps = None
     pipeline = None
     playback = None
 
     try:
-        print(f"\nProcessing {source_file}...")
+        print(f"Processing {source_file}...")
 
-        file_stem = os.path.basename(source_file).replace(".bag", "")
-        out_dir = os.path.join(DEST_PATH, file_stem)
+        file_name = os.path.basename(source_file).replace(".bag", "")
+        dest_path = os.path.join(dest_folder or DEST_PATH, file_name)
 
-        # Skip if already processed
-        if skip_if_exists and os.path.isdir(out_dir) and len(os.listdir(out_dir)) > 0:
-            print(f"  -> {file_stem} already processed. Skipping.")
+        # Keep original behavior: skip only if folder exists AND has files inside
+        if skip_if_exists and os.path.isdir(dest_path) and len(os.listdir(dest_path)) > 0:
+            print(f"{file_name} previously processed; skipping.")
             return
 
-        os.makedirs(out_dir, exist_ok=True)
+        os.makedirs(dest_path, exist_ok=True)
 
         csv_path = source_file.replace(".bag", ".csv")
         if not os.path.exists(csv_path):
-            print(f"  -> Missing CSV for {file_stem}, skipping.")
+            print(f"  -> Missing CSV for {file_name}, skipping.")
             return
 
-        telem_lookup = load_telem_file(csv_path)
+        frm_lookup = load_telem_file(csv_path)
 
-        # ---- RealSense playback setup ----
-        config = rs.config()
-        pipeline = rs.pipeline()
-
-        # Point to bag file
+        # Setup RealSense pipeline (KEEP working behavior)
+        config, pipeline = rs.config(), rs.pipeline()
         config.enable_device_from_file(source_file, repeat_playback=False)
 
-        # IMPORTANT FIX:
-        # Do NOT force enable_stream() for playback.
-        # Let the bag's recorded streams drive the configuration.
+        # Don't enable_stream() for playback; let bag drive it.
         pipeline.start(config)
 
         playback = pipeline.get_active_profile().get_device().as_playback()
-        playback.set_real_time(False)  # IMPORTANT FIX: avoid realtime stalls
+        playback.set_real_time(False)
 
-        align = rs.align(rs.stream.color)
+        alignedFs = rs.align(rs.stream.color)
         fps = FPS().start()
 
-        # ---- Read frames until EOF / timeout ----
+        # Processing loop (KEEP working EOF/timeout logic)
         while True:
             try:
                 frames = pipeline.wait_for_frames(timeout_ms=5000)
             except RuntimeError as e:
-                # Typically EOF or stream stall; stop cleanly
-                print(f"  -> [wait_for_frames] {e} (stopping {file_stem})")
+                print(f"  -> [wait_for_frames] {e} (stopping {file_name})")
                 break
 
-            frames = align.process(frames)
-            color_frame = frames.get_color_frame()
+            aligned_frames = alignedFs.process(frames)
+            color_frame = aligned_frames.get_color_frame()
             if not color_frame:
                 continue
 
-            frame_number = color_frame.frame_number
-            row = telem_lookup.get(str(frame_number))
+            # Frame number
+            frm_num = int(color_frame.get_frame_number())
+
+            # Skip if no telemetry data for frame
+            row = frm_lookup.get(str(frm_num))
             if row is None:
                 continue
 
+            # Extract throttle, steering, and heading data
             throttle = row.get("throttle", "0")
             steering = row.get("steering", "0")
             heading = row.get("heading", "0")
 
             color_rgb = np.asanyarray(color_frame.get_data())
-            bw = preprocess_frame(color_rgb)
 
-            filename = f"{int(frame_number):09d}_{throttle}_{steering}_{heading}_bw.png"
-            out_path = os.path.join(out_dir, filename)
-            cv2.imwrite(out_path, bw)
+            # Image processing using OpenCV (your working pipeline)
+            Img_frame_placeholder = preprocess_frame(color_rgb)
+
+            # Save processed images WITH LABELS in the name
+            bw_frm_name = f"{int(frm_num):09d}_{throttle}_{steering}_{heading}_bw.png"
+            cv2.imwrite(os.path.join(dest_path, bw_frm_name), Img_frame_placeholder)
 
             fps.update()
 
@@ -171,25 +167,62 @@ def process_bag_file(source_file: str, skip_if_exists: bool = True):
         except Exception:
             pass
 
-        print(f"Finished {source_file}. FPS: {fps.fps() if fps else 'N/A'}")
+        if fps:
+            print(f"Finished {source_file}. FPS: {fps.fps():.2f}")
+        else:
+            print(f"Finished {source_file}. FPS: N/A")
 
 
 def main():
+    """
+    Main function to process one bag or all .bag files in the source directory.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--bag",
+        type=str,
+        default=None,
+        help="Process a specific .bag file in rover_data/ (example: cloning-20260225-102624.bag). "
+             "If omitted, processes all .bag files in rover_data/."
+    )
+    parser.add_argument(
+        "--no-skip",
+        action="store_true",
+        help="Reprocess even if output folder already exists and has files."
+    )
+    args = parser.parse_args()
+
     os.makedirs(DEST_PATH, exist_ok=True)
 
     if not os.path.isdir(SOURCE_PATH):
         print(f"Source folder not found: {SOURCE_PATH}")
-        print("Expected: AI-PEX2/rover_data/")
+        print("Expected: <project_root>/rover_data/")
         return
 
+    skip_if_exists = not args.no_skip
+
+    # If a specific bag was provided
+    if args.bag:
+        bag_path = args.bag
+        if not os.path.isabs(bag_path):
+            bag_path = os.path.join(SOURCE_PATH, bag_path)
+
+        if not os.path.exists(bag_path):
+            print(f"Bag file not found: {bag_path}")
+            return
+
+        process_bag_file(bag_path, dest_folder=None, skip_if_exists=skip_if_exists)
+        return
+
+    # Otherwise process all bags
     bag_files = sorted([f for f in os.listdir(SOURCE_PATH) if f.endswith(".bag")])
     if not bag_files:
         print(f"No .bag files found in {SOURCE_PATH}")
         return
 
     print(f"Found {len(bag_files)} bag(s) in {SOURCE_PATH}")
-    for bag in bag_files:
-        process_bag_file(os.path.join(SOURCE_PATH, bag))
+    for filename in bag_files:
+        process_bag_file(os.path.join(SOURCE_PATH, filename), dest_folder=None, skip_if_exists=skip_if_exists)
 
 
 if __name__ == "__main__":

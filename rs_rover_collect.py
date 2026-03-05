@@ -27,8 +27,7 @@ import os
 DEFAULT_BAUD = 115200  # Default baud rate for telemetry connection
 
 # ✅ User-writable default path (prevents PermissionError on /media/... unless you explicitly pass --output)
-DEFAULT_DATA_PATH = os.path.expanduser("/media/usafa/data/rover_data")
-
+DEFAULT_DATA_PATH = os.path.expanduser("~/usafa_472/PEX02_Team_Cripple/AI-PEX2-main/rover_data")
 # Experimenting with different telemetry ports
 # DEFAULT_PORT = "/dev/ttyUSB0"  # USB connection
 DEFAULT_PORT = "/dev/ttyACM0"  # Serial connection
@@ -159,14 +158,12 @@ def collect_data(bag_file):
             if not color_frame:
                 continue
 
-            # ✅ FIXED TODO: collect frame number + throttle/steering/heading
             frm_num = int(color_frame.get_frame_number())
 
             throttle = int(connection.channels.get('3', 1500))  # CH3 throttle
             steering = int(connection.channels.get('1', 1500))  # CH1 steering
             heading = int(getattr(connection, 'heading', 0) or 0)
 
-            # Write telemetry row aligned to this frame number
             append_ardu_data(frm_num, throttle, steering, heading, file_name)
 
             if frm_num % state_update_interval == 0:
